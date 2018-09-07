@@ -1,0 +1,31 @@
+{
+  "name": "crypto-markets-api",
+  "version": "1.0.0",
+  "description": "using ccxt to get price averages",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm run tsc && node ./ts_build/index.js",
+    "tsc": "./node_modules/.bin/tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "coin",
+    "price",
+    "tracker"
+  ],
+  "author": "Micah Riggan",
+  "license": "MIT",
+  "dependencies": {
+    "@types/es6-promise": "^3.3.0",
+    "@types/express": "^4.16.0",
+    "@types/node": "^10.9.4",
+    "ccxt": "^1.17.235",
+    "crypto-markets-client": "^1.0.0",
+    "eth-monetize-api": "^1.0.0",
+    "express": "^4.16.3"
+  },
+  "devDependencies": {
+    "crypto-market-client": "^1.0.0",
+    "typescript": "^3.0.3"
+  }
+}
