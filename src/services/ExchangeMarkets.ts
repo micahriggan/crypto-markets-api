@@ -3,8 +3,9 @@ import * as fs from 'fs';
 import { Ticker } from 'ccxt';
 import { SymbolTickers } from 'crypto-markets-client';
 
-const persistTo = 'persist/tickers';
+const persistTo = 'tickers.json';
 
+export type StorageTicker = { type: string; date: Date; tickers: SymbolTickers };
 
 export class ExchangeService {
   private static _tickers: SymbolTickers = {};
@@ -13,22 +14,27 @@ export class ExchangeService {
   static needTickers() {
     return Object.keys(this._tickers).length === 0;
   }
+
   static async tickers() {
     if (this.needTickers()) {
-      console.log('Getting tickers');
-      this._tickers = await this.fetchTickers();
+      await this.fetchAndStore();
     }
     return this._tickers;
   }
 
   static async ticker(pair) {
     if (this.needTickers()) {
-      console.log('Getting tickers');
-      await this.fetchTickers();
+      await this.fetchAndStore();
     }
     const alt_pair = pair.replace('_', '/');
     const ticker = this._tickers[pair] || this._tickers[alt_pair];
     return ticker;
+  }
+
+  static async tickerForExchange(pair, exchange) {
+    const found = await this.ticker(pair);
+    const filtered = found.filter(t => t.exchange === exchange);
+    return filtered;
   }
 
   static async fetchTickers() {
@@ -61,36 +67,41 @@ export class ExchangeService {
         }
       }
     }
-    await Promise.all<SymbolTickers>(allFetches);
+    await Promise.all(allFetches);
+    console.log('Fetched', Object.keys(fetchedTickers).length, 'tickers');
     return fetchedTickers;
   }
 
   static async load() {
-    if(fs.existsSync(persistTo)) {
+    if (fs.existsSync(persistTo)) {
       const file = fs.readFileSync(persistTo, 'utf8');
       if (file) {
         const payload = JSON.parse(file.toString()) as StorageTicker;
+        return payload;
       }
     }
   }
 
-  static async cacheTickers(tickers: SymbolTickers) {
-      this._tickers = tickers;
+  static cacheTickers(tickers: SymbolTickers) {
+    this._tickers = tickers;
   }
 
   static async store(tickers: SymbolTickers) {
+    this.cacheTickers(tickers);
     const payload = { type: 'tickers', date: new Date(), tickers };
     return fs.writeFileSync(persistTo, JSON.stringify(payload));
   }
 
   static async fetchAndStore() {
     const tickers = await ExchangeService.fetchTickers();
-    console.log('Fetched', Object.keys(tickers).length, 'tickers');
     await this.store(tickers);
   }
 
   static async montior() {
-    await ExchangeService.load();
+    const loaded = await ExchangeService.load();
+    if(loaded) {
+      this.cacheTickers(loaded.tickers);
+    }
     if (this.needTickers()) {
       await this.fetchAndStore();
     } else {
